@@ -92,12 +92,25 @@ func updateCustomer(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func deleteCustomer(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id := mux.Vars(r)["id"]
+	if _, ok := database[id]; ok {
+		delete(database, id)
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(database)
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+	}
+}
+
 func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/customers", getAllCustomers).Methods("GET")
 	router.HandleFunc("/customers", addCustomer).Methods("POST")
 	router.HandleFunc("/customers/{id}", getCustomer).Methods("GET")
 	router.HandleFunc("/customers/{id}", updateCustomer).Methods("PUT")
+	router.HandleFunc("/customers/{id}", deleteCustomer).Methods("DELETE")
 	port := "3000"
 	fmt.Println("Server running on port", port)
 	http.ListenAndServe(":"+port, router)
