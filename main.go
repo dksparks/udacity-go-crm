@@ -25,7 +25,7 @@ var database = map[string]Customer{
 	"730856990": Customer{"Tim Murphy", "tim921@aol.com"},
 }
 
-func getAllCustomers(w http.ResponseWriter, r *http.Request) {
+func getCustomers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(database)
@@ -106,7 +106,7 @@ func deleteCustomer(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	router := mux.NewRouter()
-	router.HandleFunc("/customers", getAllCustomers).Methods("GET")
+	router.HandleFunc("/customers", getCustomers).Methods("GET")
 	router.HandleFunc("/customers", addCustomer).Methods("POST")
 	router.HandleFunc("/customers/{id}", getCustomer).Methods("GET")
 	router.HandleFunc("/customers/{id}", updateCustomer).Methods("PUT")
