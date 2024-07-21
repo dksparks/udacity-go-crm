@@ -4,25 +4,70 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	// "io"
+	// "io/ioutil"
 	"math/rand"
 	"net/http"
 )
 
 type Customer struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Role      string `json:"role"`
+	Email     string `json:"email"`
+	Phone     int    `json:"phone"`
+	Contacted bool   `json:"contacted"`
 }
 
-// The customer database uses nine-digit ids as keys for simplicity.
-// In reality, we would probably do something more sophisticated.
+// Customer ID is also used as key in database map.
 var database = map[string]Customer{
-	"023004163": {"Alan Grant", "agrant@du.edu"},
-	"490520604": {"Ellie Sattler", "esattler@du.edu"},
-	"344093830": {"Ian Malcolm", "imalcolm@math.utexas.edu"},
-	"869930202": {"Donald Gennaro", "dgennaro@cowanswainross.com"},
-	"400025134": {"Lex Murphy", "lex911@aol.com"},
-	"730856990": {"Tim Murphy", "tim921@aol.com"},
+	"023004163": {
+		"023004163",
+		"Alan Grant",
+		"Paleontologist",
+		"agrant@du.edu",
+		3038898552,
+		true,
+	},
+	"490520604": {
+		"490520604",
+		"Ellie Sattler",
+		"Paleobotanist",
+		"esattler@du.edu",
+		3038281386,
+		true,
+	},
+	"344093830": {
+		"344093830",
+		"Ian Malcolm",
+		"Mathematician",
+		"imalcolm@math.utexas.edu",
+		5128416655,
+		true,
+	},
+	"869930202": {
+		"869930202",
+		"Donald Gennaro",
+		"Attorney",
+		"dgennaro@cowanswainross.com",
+		4158845018,
+		true,
+	},
+	"400025134": {
+		"400025134",
+		"Lex Murphy",
+		"Student",
+		"lex911@aol.com",
+		7186177299,
+		false,
+	},
+	"730856990": {
+		"730856990",
+		"Tim Murphy",
+		"Student",
+		"tim921@aol.com",
+		7186177299,
+		false,
+	},
 }
 
 func getCustomers(w http.ResponseWriter, r *http.Request) {
@@ -39,6 +84,7 @@ func getCustomer(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(customer)
 	} else {
 		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(nil)
 	}
 }
 
@@ -49,30 +95,43 @@ func addCustomer(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
-		// Generate a new database id for the customer,
-		// and keep trying until there is no conflict or
-		// until we have tried and failed 1000 times.
-		// This simple approach is for example purposes.
-		// In reality, we would probably do something
-		// more sophisticated.
-		random := rand.New(rand.NewSource(0))
-		failureLimit := int(1e3)
-		failureCount := 0
-		for failureCount < failureLimit {
-			idNum := random.Intn(int(1e9))
-			id := fmt.Sprintf("%09d", idNum)
-			_, conflict := database[id]
-			if !conflict {
-				database[id] = customer
-				w.WriteHeader(http.StatusCreated)
-				break
+		if customer.Id == "" {
+			// If the request did not include an id, then we
+			// randomly generate one. We keep trying until
+			// there is no conflict with an existing id or
+			// until we have tried and failed 1000 times.
+			// This simple approach is for example purposes.
+			// In reality, we would probably do something
+			// more sophisticated to generate unique ids.
+			random := rand.New(rand.NewSource(0))
+			failureLimit := int(1e3)
+			failureCount := 0
+			for failureCount < failureLimit {
+				idInt := random.Intn(int(1e9))
+				idString := fmt.Sprintf("%09d", idInt)
+				_, conflict := database[idString]
+				if !conflict {
+					customer.Id = idString
+					break
+				}
+				failureCount++
 			}
-			failureCount++
+			if failureCount == failureLimit {
+				w.WriteHeader(http.StatusConflict)
+				json.NewEncoder(w).Encode(nil)
+				return
+			}
 		}
-		if failureCount == failureLimit {
+		stillNoId := customer.Id == ""
+		_, conflict := database[customer.Id]
+		if stillNoId || conflict {
 			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(nil)
+		} else {
+			database[customer.Id] = customer
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(database)
 		}
-		json.NewEncoder(w).Encode(database)
 	}
 }
 
@@ -89,6 +148,7 @@ func updateCustomer(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(customer)
 	} else {
 		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(nil)
 	}
 }
 
@@ -101,6 +161,7 @@ func deleteCustomer(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(database)
 	} else {
 		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(nil)
 	}
 }
 
