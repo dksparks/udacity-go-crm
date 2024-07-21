@@ -11,7 +11,7 @@ import (
 
 type Customer struct {
 	Name  string `json:"name"`
-    Email string `json:"email"`
+	Email string `json:"email"`
 }
 
 // The customer database uses nine-digit ids as keys for simplicity.
@@ -46,7 +46,6 @@ func addCustomer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var customer Customer
 	err := json.NewDecoder(r.Body).Decode(&customer)
-    fmt.Println(customer)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
@@ -55,7 +54,7 @@ func addCustomer(w http.ResponseWriter, r *http.Request) {
 		// until we have tried and failed 1000 times.
 		// This simple approach is for example purposes.
 		// In reality, we would probably do something
-        // more sophisticated.
+		// more sophisticated.
 		random := rand.New(rand.NewSource(0))
 		failureLimit := int(1e3)
 		failureCount := 0
@@ -77,11 +76,28 @@ func addCustomer(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func updateCustomer(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	id := mux.Vars(r)["id"]
+	var customer Customer
+	err := json.NewDecoder(r.Body).Decode(&customer)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+	} else if _, ok := database[id]; ok {
+		database[id] = customer
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(customer)
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+	}
+}
+
 func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/customers", getAllCustomers).Methods("GET")
-	router.HandleFunc("/customers/{id}", getCustomer).Methods("GET")
 	router.HandleFunc("/customers", addCustomer).Methods("POST")
+	router.HandleFunc("/customers/{id}", getCustomer).Methods("GET")
+	router.HandleFunc("/customers/{id}", updateCustomer).Methods("PUT")
 	port := "3000"
 	fmt.Println("Server running on port", port)
 	http.ListenAndServe(":"+port, router)
