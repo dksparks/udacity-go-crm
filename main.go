@@ -17,12 +17,12 @@ type Customer struct {
 // The customer database uses nine-digit ids as keys for simplicity.
 // In reality, we would probably do something more sophisticated.
 var database = map[string]Customer{
-	"023004163": Customer{"Alan Grant", "agrant@du.edu"},
-	"490520604": Customer{"Ellie Sattler", "esattler@du.edu"},
-	"344093830": Customer{"Ian Malcolm", "imalcolm@math.utexas.edu"},
-	"869930202": Customer{"Donald Gennaro", "dgennaro@cowanswainross.com"},
-	"400025134": Customer{"Lex Murphy", "lex911@aol.com"},
-	"730856990": Customer{"Tim Murphy", "tim921@aol.com"},
+	"023004163": {"Alan Grant", "agrant@du.edu"},
+	"490520604": {"Ellie Sattler", "esattler@du.edu"},
+	"344093830": {"Ian Malcolm", "imalcolm@math.utexas.edu"},
+	"869930202": {"Donald Gennaro", "dgennaro@cowanswainross.com"},
+	"400025134": {"Lex Murphy", "lex911@aol.com"},
+	"730856990": {"Tim Murphy", "tim921@aol.com"},
 }
 
 func getCustomers(w http.ResponseWriter, r *http.Request) {
