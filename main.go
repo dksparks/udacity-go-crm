@@ -94,6 +94,7 @@ func addCustomer(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&customer)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(nil)
 	} else {
 		if customer.Id == "" {
 			// If the request did not include an id, then we
@@ -116,11 +117,6 @@ func addCustomer(w http.ResponseWriter, r *http.Request) {
 				}
 				failureCount++
 			}
-			if failureCount == failureLimit {
-				w.WriteHeader(http.StatusConflict)
-				json.NewEncoder(w).Encode(nil)
-				return
-			}
 		}
 		stillNoId := customer.Id == ""
 		_, conflict := database[customer.Id]
@@ -138,17 +134,40 @@ func addCustomer(w http.ResponseWriter, r *http.Request) {
 func updateCustomer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	id := mux.Vars(r)["id"]
-	var customer Customer
-	err := json.NewDecoder(r.Body).Decode(&customer)
+	var updatedInfo Customer
+	err := json.NewDecoder(r.Body).Decode(&updatedInfo)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-	} else if _, ok := database[id]; ok {
-		database[id] = customer
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(customer)
-	} else {
+		json.NewEncoder(w).Encode(nil)
+	} else if _, ok := database[id]; !ok {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(nil)
+	} else {
+		if updatedInfo.Id == "" {
+			// Since the id can be missing from the data
+			// when adding a customer, we also allow it to
+			// be missing when updating a customer.
+			// When updating, we can infer it from the url.
+			updatedInfo.Id = id
+		}
+		idChanged := updatedInfo.Id != id
+		_, updatedIdExists := database[updatedInfo.Id]
+		if idChanged && updatedIdExists {
+			// Do not allow a customer's id to be updated
+			// to the same id as another customer.
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(nil)
+		} else {
+			database[updatedInfo.Id] = updatedInfo
+			if idChanged {
+				// If the update changes the customer's id,
+				// then a new entry is created, in which case
+                // we must remember to delete the old one.
+				delete(database, id)
+			}
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(updatedInfo)
+		}
 	}
 }
 
