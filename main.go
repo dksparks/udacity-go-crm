@@ -184,6 +184,10 @@ func deleteCustomer(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func showReadme(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "static/README.html")
+}
+
 func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/customers", getCustomers).Methods("GET")
@@ -191,6 +195,7 @@ func main() {
 	router.HandleFunc("/customers/{id}", getCustomer).Methods("GET")
 	router.HandleFunc("/customers/{id}", updateCustomer).Methods("PUT")
 	router.HandleFunc("/customers/{id}", deleteCustomer).Methods("DELETE")
+	router.HandleFunc("/", showReadme)
 	port := "3000"
 	fmt.Println("Server running on port", port)
 	http.ListenAndServe(":"+port, router)
