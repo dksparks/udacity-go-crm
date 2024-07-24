@@ -162,7 +162,7 @@ func updateCustomer(w http.ResponseWriter, r *http.Request) {
 			if idChanged {
 				// If the update changes the customer's id,
 				// then a new entry is created, in which case
-                // we must remember to delete the old one.
+				// we must remember to delete the old one.
 				delete(database, id)
 			}
 			w.WriteHeader(http.StatusOK)
